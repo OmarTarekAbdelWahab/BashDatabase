@@ -1,0 +1,39 @@
+db=$1
+maxS=10
+minS=1
+
+check_string() {
+        local name=$1
+        [[ ${#name} -gt $maxS || ${#name} -lt $minS || "$name" =~ " " ]]
+}
+
+error_exit() {
+    echo "Error +${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): } $1" >&2
+    exit 1
+}
+
+if check_string "$db" ; then
+        error_exit "Invalid Database Name"
+fi
+
+DIR="./databases/$db"
+
+if [ ! -d $DIR ]; then
+        error_exit "Database Doesn't Exist"
+fi
+
+tables=""
+
+if ! [ -z "$(find $DIR -maxdepth 0 -type d -empty)" ]; then
+        zenity --info --title="List Tables" --text="No Tables Yet in Database: $db" --width=400 --height=200 2> /dev/null
+        exit 0
+fi
+
+declare -a tables=()
+for file in "$DIR"/*; do
+        file=$(basename "$file")
+	tables+=( "${file}")
+done
+
+zenity --list --width=500 --height=300 --title="$db" --column="Tables" "${tables[@]}" 2> /dev/null
+

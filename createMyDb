@@ -1,0 +1,40 @@
+$maxN=30
+$minN=1
+
+check_string() {
+        local name=$1
+        [[ ${#name} -gt $maxN || ${#name} -lt $minN || "$name" =~ " " ]]
+}
+
+error_exit() {
+    echo "Error +${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): } $1" >&2
+    exit 1
+}
+
+txt="Database Name"
+while true; do
+	dbName=$(zenity \
+        	        --forms --title="Create Database" \
+                	--text="$txt" \
+	                --add-entry="Enter Database Name" 2> /dev/null
+	)
+	if [ $? -ne 0 ]; then
+                exit 0
+        fi
+
+
+	if check_string "$dbName" ; then
+		txt="Database Name Must Between $minN and $maxN Letters and Can't Contain Spaces"
+		continue
+	fi
+	DIR="./databases/$dbName"
+	
+	if [ -d $DIR ]; then
+		txt="Databases Already Exists"
+		continue
+	fi
+
+	mkdir -p $DIR
+	echo "Database Successfully Created"
+	break
+done

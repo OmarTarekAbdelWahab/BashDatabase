@@ -1,0 +1,186 @@
+maxC=10
+minC=1
+maxS=30
+minS=1
+
+check_string() {
+	local name=$1
+	[[ ${#name} -gt $maxS || ${#name} -lt $minS || "$name" =~ " " ]]
+}
+
+error_exit() {
+    echo "Error +${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): } $1" >&2
+    exit 1
+}
+
+DB="./databases/$1"
+
+if [[ ! -d $DB || -z "$1" ]]; then
+	error_exit "Database Doesn't Exist"
+fi
+
+txt="Enter Table Information"
+
+while true; do
+
+	formResult=$(zenity \
+			--forms --title="Create Table" \
+			--text="$txt" \
+			--add-entry="Enter Table Name" \
+			--add-entry="Enter Number of Columns" 2> /dev/null
+	)
+
+	if [ $? -ne 0 ]; then
+		exit 0
+	fi
+
+	IFS='|' read -r -a arr <<< "$formResult"
+	name=${arr[0]}
+	n=${arr[1]}
+
+	if check_string "$name"; 
+	then
+		txt="Table Name length Should be between $minS and $maxS and Can't Contain Spaces"
+		continue
+	fi
+
+	if [ -d "$DB/$name" ]; then
+                txt="Table Already Exists!!!"
+                continue
+        fi
+
+	if [[ ! $n =~ ^[0-9]+$ ]]; then
+		txt="Entered Number of Columns Must be a Number"
+		continue
+	fi
+
+	if (( n > maxC || n < minC )); then
+		txt="Enter number of Columns must be between $minC and $maxC"
+		continue
+	fi
+	break
+done
+
+
+declare -a types=()
+declare -a names=()
+declare -a defaults=()
+
+
+for (( i = 0; i < $n; i++ )); do
+	txt="Column Number $((i+1)) Name"
+	while true; do
+		colName=$(zenity --forms \
+			--title="$1($name)" \
+			--text="$txt" \
+			--add-entry="Enter Column[$((i+1))] Name" 2> /dev/null
+		)
+		if [ $? -ne 0 ]; then
+			exit 0
+		fi
+		if check_string "$colName"; then
+			txt="Column Name length Should Between $minS and $maxS and Can't Contains Spaces"
+			continue
+		fi
+		f=true
+		for prevName in "${names[@]}"; do
+			if [[ "$prevName" == "$colName" ]]; then
+				txt="There is a Previous Column With This Name"
+				f=false
+				break
+			fi
+		done
+		if ! $f; then
+			continue
+		fi
+		break
+	done
+	
+	txt="Column Number $((i+1)) Type" 
+	while true; do
+
+		colType=$(zenity --list \
+			--title="Column Type" \
+			--width=400 \
+			--height=300 \
+			--column="$txt" \
+			"String" \
+			"Integer" \
+			"Boolean" 2> /dev/null
+		)
+		if [ $?	-ne 0 ]; then
+			exit 0
+	        fi
+		if [ -z "$colType" ]; then
+			txt="Please Enter the Type of the Column"
+			continue
+		fi
+		break
+	done
+
+	txt="Column Number $((i+1)) Default Value"
+	while true; do
+		colDefault=$(zenity --forms \
+			--title="Column Default Value" \
+			--text="$txt" \
+			--add-entry="Enter Column Default Value" 2> /dev/null
+		)
+		if [ $?	-ne 0 ]; then
+			exit 0
+        	fi
+		#if [ $colType = "String" ]; then
+			#if check_string "$colDefault"; then
+			#	error_exit "Column Default Value length Should Between $minS and $maxS and Can't Contains Spaces"
+			#fi
+		#fi
+		if [[ $colType = "Integer" && -n "$colDefault" ]]; then
+			if [[ ! "$colDefault" =~ ^[-+]?[0-9]+$ ]]; then
+				txt="Column Default Value Should Be an Integer"
+				continue
+			fi
+		elif [[ $colType = "Boolean" && -n "$colDefault" ]]; then
+			if [[ "$colDefault" != true && "$colDefault" != false ]]; then
+				txt="Column Default Value Should be Either true of false"
+				continue
+			fi
+		fi
+		break
+	done
+	names[$i]=$colName
+	types[$i]=$colType
+	defaults[$i]=$colDefault
+done
+
+txt="Primary Key Column"
+while true; do
+	primaryKey=$(zenity --forms \
+		--title="Primary Key" \
+		--text="$txt" \
+		--add-entry="Enter Number of Primary Key Column [1-$n]" 2> /dev/null
+	)
+	if [ $? -ne 0 ]; then
+		exit 0
+	fi
+	
+	if ! [[ $primaryKey =~ ^[0-9]+$ && $primaryKey -ge 1 && $primaryKey -le $n ]]; then
+		txt="Must Choose Primary Key Column Between 1 and $n"
+	fi
+	break
+done
+
+DIR="$DB/$name"
+mkdir $DIR
+schema="$DIR/schema"
+
+touch $schema
+echo $name >> $schema
+echo $n >> $schema
+echo $primaryKey >> $schema
+for (( i = 0; i < $n; i++)); do
+	hasDefault="-"
+	if [ -n "${defaults[$i]}" ]; then
+		hasDefault="+"
+	fi
+	echo $hasDefault ${names[$i]} ${types[$i]} ${defaults[$i]} >> $schema
+done
+

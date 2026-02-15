@@ -1,0 +1,50 @@
+error_exit() {
+    echo "Error +${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): } $1" >&2
+    exit 1
+}
+
+declare -a dbs=()
+i=0
+
+DIR="./databases"
+
+if [ ! -d $DIR ]; then
+	mkdir $DIR
+fi
+
+for db in "$DIR"/*; do
+	db=$(basename $db)
+	dbs[$i]=$db
+	i=$((i+1))
+done
+
+if ! [ -z "$(find $DIR -maxdepth 0 -type d -empty)" ]; then
+	zenity --info --title="Databases" --text="No Databases Yet" --width=400 --height=200 2> /dev/null
+        exit 0
+fi
+
+while true; do
+
+
+	db=$(zenity --list \
+		--title="Drop Database" \
+		--width=500 \
+		--height=300 \
+	       	--column="Databases" \
+        	"${dbs[@]}" 2> /dev/null
+	)
+
+	if [ $? -ne 0 ]; then
+		exit 0
+	fi
+	if [ -z "$db" ]; then
+		continue
+	fi
+
+	DIR="./databases/$db"
+
+	rm -r $DIR
+
+	echo $db Deleted Successfully
+	break
+done

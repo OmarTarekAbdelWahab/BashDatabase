@@ -1,0 +1,49 @@
+error_exit() {
+    echo "Error +${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): } $1" >&2
+    exit 1
+}
+
+
+txt="Choose an Operation"
+while true; do
+
+	choice=$(zenity --list \
+			--title="DBMS Menu" \
+			--width=500 \
+			--height=300 \
+			--text="$txt" \
+			--column="Options" \
+				 "Create Database" \
+				 "List Databases" \
+				 "Connect Database" \
+				 "Drop Database"\
+				2> /dev/null
+	)
+	if [ $? -ne 0 ]; then
+        	#error_exit Canceled
+		echo bye
+		exit 0
+	fi
+
+	txt="Choose an Operation"
+	case $choice in
+
+	"Create Database")
+		./createMyDb
+		;;
+
+	"List Databases")
+		./listMyDb
+		;;
+
+	"Connect Database")
+		./connectMyDb
+		;;
+
+	"Drop Database")
+		./dropMyDb
+		;;
+	*)
+		txt="Please Choose an Operation"
+	esac
+done

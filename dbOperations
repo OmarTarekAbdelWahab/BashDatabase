@@ -1,0 +1,72 @@
+db=$1
+table=$2
+maxS=10
+minS=1
+
+check_string() {
+        local name=$1
+        [[ ${#name} -gt $maxS || ${#name} -lt $minS || "$name" =~ " " ]]
+}
+
+error_exit() {
+    echo "Error +${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): } $1" >&2
+    exit 1
+}
+
+if check_string "$db" ; then
+        error_exit "Invalid Database Name"
+fi
+
+DB="./databases/$db"
+
+if [ ! -d $DB ]; then
+        error_exit "Database Doesn't Exist"
+fi
+
+
+while true; do
+
+	choice=$(zenity --list \
+        	--title="$db" \
+		--text="Select an Operation" \
+		--width=500 \
+		--height=300 \
+        	--column="Operations" \
+	        "List Tables" \
+		"Create Table" \
+		"Drop Table" \
+		"Insert Into Table" \
+		"Select From Table" \
+		"Delete From Table" \
+		"Update Table" 2> /dev/null
+	)
+
+	if [ $? -ne 0 ]; then
+		exit 0
+	fi
+
+
+	case "$choice" in
+	"List Tables")
+		./listTables $db
+		;;
+	"Create Table")
+		./createTable $db
+		;;
+	"Drop Table")
+		./dropTable $db
+		;;
+	"Insert Into Table")
+		./insertTable $db
+		;;
+	"Select From Table")
+		./selectTable $db
+		;;
+	"Delete From Table")
+		./deleteTable $db
+		;;
+	"Update Table")
+		./updateTable $db
+		;;
+	esac
+done

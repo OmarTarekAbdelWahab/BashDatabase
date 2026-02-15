@@ -1,0 +1,8 @@
+HighSchoolers
+5
+1
+- id Integer
+- Name String
++ Grade String A
++ isMale Boolean false
++ age Integer 17

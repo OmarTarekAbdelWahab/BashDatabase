@@ -1,0 +1,19 @@
+DIR="./databases/"
+dbs=""
+
+if [ ! -d $DIR ]; then
+	mkdir $DIR
+fi
+
+if ! [ -z "$(find $DIR -maxdepth 0 -type d -empty)" ]; then
+	zenity --info --title="Databases" --text="No Databases Yet" --width=400 --height=200 2> /dev/null
+	exit 0
+fi
+
+declare -a options=()
+for file in "$DIR"/*; do
+	file=$(basename "$file")
+	options+=( "${file}")
+done
+
+zenity --list --width=500 --height=300 --title="Available Databases" --column="Options" "${options[@]}" 2> /dev/null

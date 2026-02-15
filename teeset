@@ -1,0 +1,7 @@
+f=false
+
+if $f; then 
+	echo y
+fi
+
+
